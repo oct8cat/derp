@@ -1,18 +1,19 @@
+'use strict';
+
+/* global describe, it, before, after */
+
 var derp = require('../lib/derp'),
-    db = derp.db,
-    services = derp.services,
     should = require('should'),
-    path = require('path')
+    path = require('path'),
+    mkdirp = require('mkdirp'),
+    rimraf = require('rimraf'),
+    db = derp.db,
+    services = derp.services
 
 var DB_URI = 'mongodb://localhost/test',
     DIR_FIXTURES = path.join(__dirname, 'fixtures'),
     DIR_TMP = path.join(__dirname, 'tmp'),
     MODEL_CAT = 'Cat',
-    models = function(mongoose) {
-        mongoose.model(MODEL_CAT, new mongoose.Schema({
-            name: {type: 'String', required: true}
-        }))
-    },
     DB_PROPS = ['mongoose', 'connect', 'disconnect', 'model'],
     SRV_PROPS = ['fs', 'image', 'upload'],
     FSSRV_PROPS = [
@@ -25,14 +26,13 @@ var DB_URI = 'mongodb://localhost/test',
 describe('derp', function() {
 
     describe('#db', function() {
-        before(function() {
-            db.init({models: models})
-        })
+        before(function() { db.init({models: require(path.join(DIR_FIXTURES, 'models'))}) })
+
         it('should have properties: ' + DB_PROPS, function() {
             db.should.have.properties(DB_PROPS)
         })
         it('should register models on init.', function() {
-            db.model(MODEL_CAT).should.be.ok
+            db.model(MODEL_CAT).should.be.ok // jshint ignore:line
         })
         it('should connects/disconnects without errors.', function(done) {
             db.connect(DB_URI, function(err) {
@@ -88,7 +88,7 @@ describe('derp', function() {
                     services.upload.saveImage({path: src}, function(err, dest) {
                         if (err) { done(err); return }
                         services.fs.fs.exists(dest, function(exists) {
-                            exists.should.be.ok
+                            exists.should.be.ok // jshint ignore:line
                             done()
                         })
                     })
