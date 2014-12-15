@@ -1,6 +1,7 @@
 'use strict';
 
 /* global describe, it, before, after */
+/* jshint expr: true */
 
 var derp = require('../lib/derp'),
     should = require('should'),
@@ -32,7 +33,7 @@ describe('derp', function() {
             db.should.have.properties(DB_PROPS)
         })
         it('should register models on init.', function() {
-            db.model(MODEL_CAT).should.be.ok // jshint ignore:line
+            db.model(MODEL_CAT).should.be.ok
         })
         it('should connects/disconnects without errors.', function(done) {
             db.connect(DB_URI, function(err) {
@@ -88,7 +89,7 @@ describe('derp', function() {
                     services.upload.saveImage({path: src}, function(err, dest) {
                         if (err) { done(err); return }
                         services.fs.fs.exists(dest, function(exists) {
-                            exists.should.be.ok // jshint ignore:line
+                            exists.should.be.ok
                             done()
                         })
                     })
