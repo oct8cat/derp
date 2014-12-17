@@ -8,35 +8,40 @@ var derp = require('../lib/derp'),
     path = require('path'),
     mkdirp = require('mkdirp'),
     rimraf = require('rimraf'),
-    db = derp.db,
-    services = derp.services
+    async = require('async'),
+    errors = require('../lib/errors')
 
-var DB_URI = 'mongodb://localhost/test',
+var DB_URI = 'mongodb://localhost/derp-test',
     DIR_FIXTURES = path.join(__dirname, 'fixtures'),
     DIR_TMP = path.join(__dirname, 'tmp'),
-    MODEL_CAT = 'Cat',
-    DB_PROPS = ['mongoose', 'connect', 'disconnect', 'model'],
-    SRV_PROPS = ['fs', 'image', 'upload'],
-    FSSRV_PROPS = [
-        'DIR_PUBLIC', 'DIR_UPLOADS', 'DIR_UPLOADS_IMAGES',
-        'path', 'fs', 'mkdirp',
-        'j', 'today', 'uniq', 'pathToUrl', 'urlToPath'
-    ],
-    UPLOADSRV_PROPS = ['saveImage']
+    PATH_MODELS = path.join(DIR_FIXTURES, 'models'),
+    PATH_DATA = path.join(DIR_FIXTURES, 'data')
 
 describe('derp', function() {
+    var db = derp.db,
+        services = derp.services,
+        models = require(PATH_MODELS),
+        data = require(PATH_DATA)
 
-    describe('#db', function() {
-        before(function() { db.init({models: require(path.join(DIR_FIXTURES, 'models'))}) })
+    before(function(done) {
+        db.init({models: models}).connect(DB_URI, function(err) {
+            if (err) { done(err); return }
+            db.mongoose.connection.db.dropDatabase(function(err) {
+                if (err) { done(err); return }
+                async.each(Object.keys(data), function(k, cb) {
+                    db.mongoose.model(k).create(data[k], cb)
+                }, function(err) {
+                    if (err) { done(err); return }
+                    mkdirp(DIR_TMP, done)
+                })
+            })
+        })
+    })
 
-        it('should have properties: ' + DB_PROPS, function() {
-            db.should.have.properties(DB_PROPS)
-        })
-        it('should register models on init.', function() {
-            db.model(MODEL_CAT).should.be.ok
-        })
-        it('should connects/disconnects without errors.', function(done) {
-            db.connect(DB_URI, function(err) {
+    after(function(done) {
+        rimraf(DIR_TMP, function(err) {
+            if (err) { done(err); return }
+            db.mongoose.connection.db.dropDatabase(function(err) {
                 if (err) { done(err); return }
                 db.disconnect(done)
             })
@@ -44,16 +49,7 @@ describe('derp', function() {
     })
 
     describe('#services', function() {
-        before(function(done) { services.fs.mkdirp(DIR_TMP, done) })
-        after(function(done) { services.fs.rimraf(DIR_TMP, done) })
-
-        it('should have properties: ' + SRV_PROPS, function() {
-            services.should.have.properties(SRV_PROPS)
-        })
         describe('#fs', function() {
-            it('should have properties: ' + FSSRV_PROPS, function() {
-                services.fs.should.have.properties(FSSRV_PROPS)
-            })
             describe('.today', function() {
                 it('should return current date as YYYY-MM-DD.', function() {
                     services.fs.today().should.match(/^\d{4}-\d{2}-\d{2}$/)
@@ -80,9 +76,6 @@ describe('derp', function() {
         })
 
         describe('#upload', function() {
-            it('should have properties: ' + UPLOADSRV_PROPS, function() {
-                services.upload.should.have.properties(UPLOADSRV_PROPS)
-            })
             describe('.saveImage', function() {
                 it('should save image without errors', function(done) {
                     var src = path.join(DIR_FIXTURES, 'cat.jpg')
@@ -95,6 +88,51 @@ describe('derp', function() {
                     })
                 })
             })
+        })
+
+        describe('#resource', function() {
+            describe('.get', function() {
+                it('should retrieve resource by id.', function(done) {
+                    services.resource.get('Studio', 'madhouse', function(err, studio) {
+                        if (err) { done(err); return }
+                        studio.should.be.ok
+                        done(err)
+                    })
+                })
+                it('should retrieve null when resource not found.', function(done) {
+                    services.resource.get('Studio', '4c', function(err, studio) {
+                        if (err) { done(err); return }
+                        should.not.exist(studio)
+                        done(err)
+                    })
+                })
+                it('should raise DResourceNotRegisteredError {operation.name = get} when resource not registered.', function(done) {
+                    services.resource.get('Movie', 'none', function(err, movie) {
+                        err.should.be.instanceOf(errors.DResourceNotRegisteredError)
+                        err.operation.name.should.be.equal('get')
+                        done()
+                    })
+                })
+            })
+
+            describe('.list', function() {
+                it('should retrieve array of resources', function(done) {
+                    services.resource.list('Studio', function(err, studios) {
+                        if (err) { done(err); return }
+                        studios.should.be.an.Array.and.have.length(data.Studio.length)
+                        done(err)
+                    })
+                })
+                it('should raise DResourceNotRegisteredError {operation.name = list} when resource not registered.', function(done) {
+                    services.resource.list('Movie', function(err, movie) {
+                        err.should.be.instanceOf(errors.DResourceNotRegisteredError)
+                        err.operation.name.should.be.equal('list')
+                        done()
+                    })
+                })
+            })
+
+            // TODO: create, update, remove
         })
     })
 })
