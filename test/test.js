@@ -132,7 +132,57 @@ describe('derp', function() {
                 })
             })
 
-            // TODO: create, update, remove
+            describe('.create', function() {
+                it('should raise DResourceNotRegisteredError {operation.name = create} when resource not registered.', function(done) {
+                    services.resource.create('Movie', {}, function(err, movie) {
+                        err.should.be.instanceOf(errors.DResourceNotRegisteredError)
+                        err.operation.name.should.be.equal('create')
+                        done()
+                    })
+                })
+            })
+
+            describe('.update', function() {
+                it('should raise DResourceNotRegisteredError {operation.name = update} when resource not registered.', function(done) {
+                    services.resource.update('Movie', 'none', {}, function(err, movie) {
+                        err.should.be.instanceOf(errors.DResourceNotRegisteredError)
+                        err.operation.name.should.be.equal('update')
+                        done()
+                    })
+                })
+            })
+
+
+            describe('.remove', function() {
+                it('should raise DResourceNotRegisteredError {operation.name = remove} when resource not registered.', function(done) {
+                    services.resource.remove('Movie', 'none', function(err, movie) {
+                        err.should.be.instanceOf(errors.DResourceNotRegisteredError)
+                        err.operation.name.should.be.equal('remove')
+                        done()
+                    })
+                })
+            })
+
+
+            describe('.create/.update/.remove', function() {
+                it('should retrieve created/updated/removed document', function(done) {
+                    var attributes = {_id: 'test', name: 'Trigger'},
+                        attributes2 = {name: 'Khara'}
+                    services.resource.create('Studio', attributes, function(err, studio) {
+                        if (err) { done(err); return }
+                        studio.name.should.be.equal(attributes.name)
+                        services.resource.update('Studio', studio._id, attributes2, function(err, studio) {
+                            if (err) { done(err); return }
+                            studio.name.should.be.equal(attributes2.name)
+                            services.resource.remove('Studio', studio._id, function(err, studio) {
+                                if (err) { done(err); return }
+                                studio.name.should.be.equal(attributes2.name)
+                                done(err)
+                            })
+                        })
+                    })
+                })
+            })
         })
     })
 })
