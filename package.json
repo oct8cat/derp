@@ -4,23 +4,16 @@
   "description": "Some DRY shit.",
   "main": "index.js",
   "scripts": {
-    "test": "DIR_PUBLIC=`pwd`/test/tmp/public ./node_modules/mocha/bin/mocha -R spec test/test.js"
+    "test": "make test"
   },
   "author": "Tako Neko <oct8cat@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "gm": "^1.17.0",
-    "mkdirp": "^0.5.0",
-    "mongoose": "3.8.*",
-    "rimraf": "^2.2.8",
-    "underscore": "^1.7.0"
+    "lodash": "*"
   },
   "devDependencies": {
-    "async": "^0.9.0",
-    "grunt": "^0.4.5",
-    "grunt-contrib-jshint": "^0.10.0",
-    "mocha": "^2.0.1",
-    "should": "^4.3.0"
+    "jshint": "^2.7.0",
+    "mocha": "^2.0.1"
   },
   "directories": {
     "test": "test"
